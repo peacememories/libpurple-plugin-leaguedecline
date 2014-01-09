@@ -26,6 +26,7 @@ static void send_deny(char * name, PurpleAccount *account) {
             int length;
             char * out_str = xmlnode_to_str(node, &length);
             info->send_raw(con, out_str, length);
+            free(out_str);
             xmlnode_free(node);
         }
     }
