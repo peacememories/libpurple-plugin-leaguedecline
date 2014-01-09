@@ -3,6 +3,10 @@
 #define PLUGIN_VERSION "0.1"
 #define PLUGIN_ID "core-leaguedeny"
 
+#define PREFS_BASE "/plugins/core/leaguedecline"
+#define PREF_AUTO_DECLINE PREFS_BASE "/autodecline"
+#define PREF_AUTO_REPLY PREFS_BASE "/autoreply"
+
 #include <string.h>
 #include <argz.h>
 
@@ -15,7 +19,7 @@
 #include <prpl.h>
 #include <connection.h>
 
-static void send_deny(char * name, PurpleAccount *account) {
+static void send_decline(char * name, PurpleAccount *account) {
     PurpleConnection *con = purple_account_get_connection(account);
     if(con) {
         PurplePluginProtocolInfo *info = PURPLE_PLUGIN_PROTOCOL_INFO(con->prpl);
@@ -29,6 +33,14 @@ static void send_deny(char * name, PurpleAccount *account) {
             free(out_str);
             xmlnode_free(node);
         }
+    }
+}
+
+static void send_response(PurpleConversation *conv) {
+    const char * msg = purple_prefs_get_string(PREF_AUTO_REPLY);
+    if(msg != NULL && strlen(msg) != 0) {
+        PurpleConvIm *im = purple_conversation_get_im_data(conv);
+        purple_conv_im_send_with_flags(im, msg, PURPLE_MESSAGE_AUTO_RESP);
     }
 }
 
@@ -54,7 +66,8 @@ static gboolean message_handler(PurpleAccount *account,
             *message = malloc(length);
             strncpy(*message, out_str, length);
             purple_stringref_unref(out_msg);
-            send_deny(*sender, account);
+            if(purple_prefs_get_bool(PREF_AUTO_DECLINE)) send_decline(*sender, account);
+            send_response(conv);
         }
     }
     xmlnode_free(node);
@@ -69,6 +82,31 @@ static gboolean plugin_load(PurplePlugin *plugin) {
                           PURPLE_CALLBACK(message_handler), 0);
     return TRUE;
 }
+
+static PurplePluginPrefFrame *get_plugin_pref_frame(PurplePlugin *plugin) {
+    PurplePluginPrefFrame *frame;
+    PurplePluginPref *pref;
+
+    frame = purple_plugin_pref_frame_new();
+    pref = purple_plugin_pref_new_with_name(PREF_AUTO_DECLINE);
+    purple_plugin_pref_set_label(pref, "Automatically decline invites");
+    purple_plugin_pref_frame_add(frame, pref);
+    pref = purple_plugin_pref_new_with_name(PREF_AUTO_REPLY);
+    purple_plugin_pref_set_label(pref, "Automated response to invites");
+    purple_plugin_pref_frame_add(frame, pref);
+
+    return frame;
+}
+
+static PurplePluginUiInfo prefs_info = {
+    get_plugin_pref_frame,
+    0,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
 
 static PurplePluginInfo info = {
     PURPLE_PLUGIN_MAGIC,
@@ -95,7 +133,7 @@ static PurplePluginInfo info = {
 
     NULL,
     NULL,
-    NULL,
+    &prefs_info,
     NULL,
     NULL,
     NULL,
@@ -104,7 +142,9 @@ static PurplePluginInfo info = {
 };
 
 static void init_plugin(PurplePlugin *plugin) {
-
+    purple_prefs_add_none(PREFS_BASE);
+    purple_prefs_add_bool(PREF_AUTO_DECLINE, TRUE);
+    purple_prefs_add_string(PREF_AUTO_REPLY, NULL);
 }
 
 PURPLE_INIT_PLUGIN(leaguedeny, init_plugin, info);
