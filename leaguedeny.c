@@ -8,7 +8,6 @@
 #define PREF_AUTO_REPLY PREFS_BASE "/autoreply"
 
 #include <string.h>
-#include <argz.h>
 
 #include <debug.h>
 #include <plugin.h>
@@ -18,6 +17,8 @@
 #include <conversation.h>
 #include <prpl.h>
 #include <connection.h>
+
+#include "strings.h"
 
 static void send_decline(char * name, PurpleAccount *account) {
     PurpleConnection *con = purple_account_get_connection(account);
@@ -49,11 +50,8 @@ static gboolean message_handler(PurpleAccount *account,
                                 char **message,
                                 PurpleConversation *conv,
                                 PurpleMessageFlags *flags) {
-    size_t length = strlen(*message) + 1;
-    char * text = malloc(length);
-    strncpy(text, *message, length);
-    argz_replace(&text, &length, "&lt;", "<", NULL);
-    argz_replace(&text, &length, "&gt;", ">", NULL);
+    char *text = str_replace(*message, "&lt;", "<", false);
+    text = str_replace(text, "&gt;", ">", true);
 
     xmlnode *node = xmlnode_from_str(text, -1);
     free(text);
@@ -62,9 +60,8 @@ static gboolean message_handler(PurpleAccount *account,
             free(*message);
             PurpleStringref * out_msg = purple_stringref_printf("/me has invited you to a League of Legends game.");
             const char * out_str = purple_stringref_value(out_msg);
-            length = strlen(out_str) + 1;
-            *message = malloc(length);
-            strncpy(*message, out_str, length);
+            *message = malloc(strlen(out_str) + 1);
+            strcpy(*message, out_str);
             purple_stringref_unref(out_msg);
             if(purple_prefs_get_bool(PREF_AUTO_DECLINE)) send_decline(*sender, account);
             send_response(conv);

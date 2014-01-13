@@ -6,7 +6,7 @@ add_definitions(-DPACKAGE="${CMAKE_PROJECT_NAME}" -DLOCALEDIR=NULL)
 
 set(CMAKE_C_FLAGS_DEBUG "-O0 -ggdb -Wall" CACHE STRING "" FORCE)
 
-add_library(leaguedecline SHARED leaguedeny.c)
+add_library(leaguedecline SHARED leaguedeny.c strings.c)
 
 find_package( PkgConfig REQUIRED )
 find_package( Threads REQUIRED )
