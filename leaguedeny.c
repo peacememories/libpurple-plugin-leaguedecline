@@ -9,11 +9,9 @@
 
 #include <string.h>
 
-#include <debug.h>
 #include <plugin.h>
 #include <version.h>
 #include <notify.h>
-#include <stringref.h>
 #include <conversation.h>
 #include <prpl.h>
 #include <connection.h>
@@ -58,11 +56,7 @@ static gboolean message_handler(PurpleAccount *account,
     if(node != NULL) {
         if(xmlnode_get_child(node, "inviteId") != NULL) {
             free(*message);
-            PurpleStringref * out_msg = purple_stringref_printf("/me has invited you to a League of Legends game.");
-            const char * out_str = purple_stringref_value(out_msg);
-            *message = malloc(strlen(out_str) + 1);
-            strcpy(*message, out_str);
-            purple_stringref_unref(out_msg);
+            *message = g_strdup_printf("/me has invited you to a League of Legends game.");
             if(purple_prefs_get_bool(PREF_AUTO_DECLINE)) send_decline(*sender, account);
             send_response(conv);
         }
